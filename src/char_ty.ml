@@ -618,6 +618,41 @@ module Skill = struct
             ; t "."
             ]
         ]
+    | KnockOut ->
+        [ p
+            [ t "This skill allows to "
+            ; b "knock out a foe"
+            ; t " for a duration of "
+            ; b "1D6"
+            ; t " rounds if they fail a "
+            ; b (display Willpower)
+            ; t " roll."
+            ]
+        ]
+    | Driving_land ->
+        [ p
+            [ t "This skill allows to "
+            ; b "drive"
+            ; t "any and all land vehicles, "
+            ; t "real or dreamt. It also allows for "
+            ; b "maintenance"
+            ; t ", but not for repair (that much is handled on a case-by-case"
+            ; t " basis, depending on the nature of the vehicle: Electronics,"
+            ; t " Mechanics, etc.)"
+            ]
+        ; p
+            [ t "A character can drive a vehicle with a successful "
+            ; t (display Driving_land)
+            ; t " roll, up to a scale difference allowed by"
+            ; t " the Interactions table."
+            ; t " Beyond that, it'll be impossible because"
+            ; t " the vehicle is too small, or"
+            ; t " a group effort because it is too big."
+            ]
+        ; p
+            [ t "Driving an actual real-life car will require 5 toys at least."
+            ]
+        ]
     | _ -> []
 end
 
