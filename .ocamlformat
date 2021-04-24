@@ -1,0 +1,5 @@
+break-separators = before
+dock-collection-brackets = false
+indicate-multiline-delimiters = space
+sequence-style = before
+sequence-blank-line = compact

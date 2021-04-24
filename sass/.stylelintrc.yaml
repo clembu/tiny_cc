@@ -1,0 +1,10 @@
+plugins:
+    - stylelint-scss
+    - stylelint-prettier
+extends:
+    - stylelint-config-recommended-scss
+rules:
+    prettier/prettier: true
+    no-descending-specificity: null
+    media-feature-name-no-unknown: null
+    font-family-no-missing-generic-family-keyword: null
