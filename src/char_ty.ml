@@ -37,6 +37,8 @@ module Power = struct
     | Transformation : Kind.toy t
     | Malleable : Kind.toy t
 
+  let cp : type k. k t -> int = fun _ -> 1
+
   let options : type k. k Kind.t -> k t list = function
     | Kind.Pet ->
         [ Dream; Strength; Pretty; Flight; Intimidation; Claws; Leap; HumanBFF ]
@@ -932,7 +934,7 @@ type 'k char_build =
   ; skills : char_skills
   }
 
-let new_build () =
+let new_build _ =
   { name = ""
   ; powers = []
   ; flaws = []
@@ -982,6 +984,200 @@ let new_build () =
       }
   }
 
-let new_pet () = new_build ()
+module Patch = struct
+  type 'a toggle = Add of 'a | Remove of 'a
 
-let new_toy () = new_build ()
+  type 'g skill_ty =
+    | Gen of ('g, Skill.S.g) Skill.t toggle
+    | Spec of ('g, Skill.S.s) Skill.t toggle
+
+  type 'g group = Set_bonus of int | Type of 'g skill_ty
+
+  let apply_toggle l = function
+    | Add e -> if List.mem e l then l else e :: l
+    | Remove e -> List.filter (Fun.negate (( = ) e)) l
+
+  let apply_group (type g) (g : g skill_group) = function
+    | Set_bonus n -> { g with skill_group_bonus = n }
+    | Type (Gen tg) ->
+        { g with skill_gen_skills = apply_toggle g.skill_gen_skills tg }
+    | Type (Spec tg) ->
+        { g with skill_spec_skills = apply_toggle g.skill_spec_skills tg }
+
+  type 'k flaw = 'k Flaw.t toggle
+
+  let apply_flaw (type k) (b : k char_build) tg =
+    { b with flaws = apply_toggle b.flaws tg }
+
+  type 'k power = 'k Power.t toggle
+
+  let apply_power (type k) (b : k char_build) tg =
+    { b with powers = apply_toggle b.powers tg }
+
+  type skills =
+    | Agile of Skill.G.agile group
+    | Cute of Skill.G.cute group
+    | Perceptive of Skill.G.perceptive group
+    | Strong of Skill.G.strong group
+    | Tough of Skill.G.tough group
+    | Fast of Skill.G.fast group
+    | Smart of Skill.G.smart group
+
+  let group_patch : type g. g Skill.group -> g group -> skills = function
+    | Skill.Agile -> fun x -> Agile x
+    | Skill.Cute -> fun x -> Cute x
+    | Skill.Perceptive -> fun x -> Perceptive x
+    | Skill.Fast -> fun x -> Fast x
+    | Skill.Tough -> fun x -> Tough x
+    | Skill.Smart -> fun x -> Smart x
+    | Skill.Strong -> fun x -> Strong x
+
+  let apply_skills s = function
+    | Agile g -> { s with agile_skills = apply_group s.agile_skills g }
+    | Cute g -> { s with cute_skills = apply_group s.cute_skills g }
+    | Perceptive g ->
+        { s with perceptive_skills = apply_group s.perceptive_skills g }
+    | Smart g -> { s with smart_skills = apply_group s.smart_skills g }
+    | Tough g -> { s with tough_skills = apply_group s.tough_skills g }
+    | Strong g -> { s with strong_skills = apply_group s.strong_skills g }
+    | Fast g -> { s with fast_skills = apply_group s.fast_skills g }
+
+  type 'k t = Flaw of 'k flaw | Power of 'k power | Skills of skills
+
+  let apply (type k) (b : k char_build) = function
+    | Flaw f -> apply_flaw b f
+    | Power p -> apply_power b p
+    | Skills s -> { b with skills = apply_skills b.skills s }
+end
+
+let new_pet () = new_build Kind.Pet
+
+let new_toy () = new_build Kind.Toy
+
+type build_state = [ `Can_add | `Cannot_add | `Added ]
+
+let valid_power : type k. k Kind.t -> k char_build -> k Power.t -> bool =
+ fun k b p ->
+  match k with
+  | Kind.Pet ->
+      if List.mem Flaw.Harmless b.flaws then p <> Power.Claws else true
+  | Kind.Toy -> true
+
+let valid_skill :
+    type k g s.
+       k Kind.t
+    -> k char_build
+    -> g Skill.group
+    -> s Skill.ty
+    -> (g, s) Skill.t
+    -> bool =
+ fun k b g _t _s ->
+  match k with
+  | Kind.Toy ->
+      if List.mem Flaw.First_age b.flaws then
+        match g with Skill.Smart -> false | _ -> true
+      else true
+  | Kind.Pet -> true
+
+let skills_group_cost :
+    type k g. k Kind.t -> k char_build -> g skill_group -> int =
+ fun k b g ->
+  let gen_cost =
+    List.length
+      (List.filter (valid_skill k b g.skill_group Skill.Gen) g.skill_gen_skills)
+  in
+  if gen_cost = 0 then 0
+  else
+    gen_cost
+    + 2
+      * List.length
+          (List.filter
+             (valid_skill k b g.skill_group Skill.Spec)
+             g.skill_spec_skills )
+
+let skills_cost : type k. k Kind.t -> k char_build -> int =
+ fun k b ->
+  skills_group_cost k b b.skills.fast_skills
+  + skills_group_cost k b b.skills.cute_skills
+  + skills_group_cost k b b.skills.smart_skills
+  + skills_group_cost k b b.skills.tough_skills
+  + skills_group_cost k b b.skills.strong_skills
+  + skills_group_cost k b b.skills.perceptive_skills
+  + skills_group_cost k b b.skills.agile_skills
+
+let available_cp : type k. k Kind.t -> k char_build -> int =
+ fun k b ->
+  let bonus = List.fold_left ( + ) 0 @@ List.map Flaw.cp b.flaws in
+  let pool = 20 + bonus in
+  let pool =
+    List.fold_left ( - ) pool @@ List.map Power.cp
+    @@ List.filter (valid_power k b) b.powers
+  in
+  pool - skills_cost k b
+
+let flaw_build_state : type k. k char_build -> k Flaw.t -> build_state =
+ fun b f ->
+  if List.mem f b.flaws then `Added
+  else
+    match b.flaws with
+    | [] -> `Can_add
+    | _ :: _ :: _ -> `Cannot_add
+    | _ -> `Can_add
+
+let power_build_state :
+    type k. k Kind.t -> k char_build -> k Power.t -> build_state =
+ fun k b p ->
+  if List.mem p b.powers then `Added
+  else
+    let current_power_cost =
+      List.fold_left ( + ) 0 @@ List.map Power.cp b.powers
+    in
+    let av_cp =
+      min (available_cp k b)
+        ((match k with Kind.Pet -> 3 | Kind.Toy -> 4) - current_power_cost)
+    in
+    if av_cp <= 0 then `Cannot_add
+    else if valid_power k b p then `Can_add
+    else `Cannot_add
+
+let skill_build_state :
+    type k g s.
+       k Kind.t
+    -> k char_build
+    -> g Skill.group
+    -> s Skill.ty
+    -> (g, s) Skill.t
+    -> build_state =
+ fun k b g t s ->
+  let group_has_skill g =
+    match t with
+    | Skill.Gen -> List.mem s g.skill_gen_skills
+    | Skill.Spec -> List.mem s g.skill_spec_skills
+  in
+  let group_has_gen_skill () =
+    match g with
+    | Skill.Agile -> List.length b.skills.agile_skills.skill_gen_skills > 0
+    | Skill.Perceptive ->
+        List.length b.skills.perceptive_skills.skill_gen_skills > 0
+    | Skill.Cute -> List.length b.skills.cute_skills.skill_gen_skills > 0
+    | Skill.Fast -> List.length b.skills.fast_skills.skill_gen_skills > 0
+    | Skill.Tough -> List.length b.skills.tough_skills.skill_gen_skills > 0
+    | Skill.Strong -> List.length b.skills.strong_skills.skill_gen_skills > 0
+    | Skill.Smart -> List.length b.skills.smart_skills.skill_gen_skills > 0
+  in
+  let has_skill =
+    match g with
+    | Skill.Agile -> group_has_skill b.skills.agile_skills
+    | Skill.Perceptive -> group_has_skill b.skills.perceptive_skills
+    | Skill.Cute -> group_has_skill b.skills.cute_skills
+    | Skill.Fast -> group_has_skill b.skills.fast_skills
+    | Skill.Tough -> group_has_skill b.skills.tough_skills
+    | Skill.Strong -> group_has_skill b.skills.strong_skills
+    | Skill.Smart -> group_has_skill b.skills.smart_skills
+  in
+  if has_skill then `Added
+  else if available_cp k b <= 0 then `Cannot_add
+  else
+    match t with
+    | Skill.Gen -> `Can_add
+    | Skill.Spec -> if group_has_gen_skill () then `Can_add else `Cannot_add

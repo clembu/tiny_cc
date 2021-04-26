@@ -25,35 +25,23 @@ let identity_tile (type k) ~(kind : k Char_ty.Kind.t) ?name () =
         [ name_input ?init:name ~kind () ]
     ]
 
-let counter ~label value_s =
+let counter ?size ?label value_s =
+  let size_class = Option.map (fun s -> "is-" ^ string_of_int s) size in
   F.div
     ~a:[ F.a_class [ "level-item"; "has-text-centered" ] ]
     [ F.div
-        [ F.p ~a:[ F.a_class [ "heading" ] ] [ F.txt label ]
-        ; F.p
-            ~a:[ F.a_class [ "title" ] ]
-            [ RF.txt @@ React.S.map string_of_int value_s ]
-        ]
+        ( Option.map
+            (fun label -> F.p ~a:[ F.a_class [ "heading" ] ] [ F.txt label ])
+            label
+        @? [ F.p
+               ~a:[ F.a_class (size_class @? [ "title" ]) ]
+               [ RF.txt @@ React.S.map string_of_int value_s ]
+           ] )
     ]
 
-let rec find_idx : type a. int -> a -> a list -> int =
- fun c x -> function
-  | [] -> raise Not_found
-  | hd :: tl -> if hd = x then c else find_idx (c + 1) x tl
-
-let find_idx : type a. a -> a list -> int = fun x l -> find_idx 0 x l
-
-let editable_list ?title ?roll ~options ~on_delete ~on_add ~display_one ~codec
-    (l_r, l_h) =
-  let add_one one =
-    ReactiveData.RList.snoc one l_h
-    ; on_add one
-  in
-  let delete one =
-    let idx = ReactiveData.RList.value l_r |> find_idx one in
-    ReactiveData.RList.remove idx l_h
-    ; on_delete one
-  in
+let editable_list ?title ?roll ?options ~patch ~display_one ~codec l_s =
+  let add_one one = patch (Char_ty.Patch.Add one) in
+  let delete one = patch (Char_ty.Patch.Remove one) in
   let display_one_li one =
     F.li
       ~a:[ F.a_class [ "level"; "is-mobile" ] ]
@@ -71,7 +59,7 @@ let editable_list ?title ?roll ~options ~on_delete ~on_add ~display_one ~codec
           ]
       ]
   in
-  let add_elt =
+  let add_elt_o =
     let roll_btn_o =
       Option.map
         (fun roll ->
@@ -82,21 +70,27 @@ let editable_list ?title ?roll ~options ~on_delete ~on_add ~display_one ~codec
             [ F.txt "Roll for it" ] )
         roll
     in
-    let add_select =
-      Inputs.select ~on_change:add_one ~codec ~display_one options
+    let add_select_o =
+      Option.map (Inputs.select ~on_change:add_one ~codec ~display_one) options
     in
-    F.div
-      ~a:[ F.a_class [ "block" ] ]
-      [ F.p ~a:[ F.a_class [ "heading" ] ] [ F.txt "Add one" ]
-      ; F.div
-          ~a:[ F.a_class [ "level" ] ]
-          ( F.div ~a:[ F.a_class [ "level-left" ] ] [ add_select ]
-          @: Option.map
-               (fun roll_btn ->
-                 F.div ~a:[ F.a_class [ "level-right" ] ] [ roll_btn ] )
-               roll_btn_o
-          @? [] )
-      ]
+    if roll_btn_o = None && add_select_o = None then None
+    else
+      Some
+        (F.div
+           ~a:[ F.a_class [ "block" ] ]
+           [ F.p ~a:[ F.a_class [ "heading" ] ] [ F.txt "Add one" ]
+           ; F.div
+               ~a:[ F.a_class [ "level" ] ]
+               ( Option.map
+                   (fun add_select ->
+                     F.div ~a:[ F.a_class [ "level-left" ] ] [ add_select ] )
+                   add_select_o
+               @? Option.map
+                    (fun roll_btn ->
+                      F.div ~a:[ F.a_class [ "level-right" ] ] [ roll_btn ] )
+                    roll_btn_o
+               @? [] )
+           ] )
   in
   F.div
     ~a:[ F.a_class [ "block" ] ]
@@ -104,26 +98,17 @@ let editable_list ?title ?roll ~options ~on_delete ~on_add ~display_one ~codec
         (fun title -> F.p ~a:[ F.a_class [ "title"; "is-5" ] ] [ F.txt title ])
         title
     @? ( RF.ul ~a:[ F.a_class [ "block" ] ]
-       @@ ReactiveData.RList.map display_one_li l_r )
-    @: add_elt @: [] )
+       @@ ReactiveData.RList.map display_one_li
+       @@ ReactiveData.RList.from_signal l_s )
+    @: add_elt_o @? [] )
 
-let flaws_list (type k) ~add_cp ~(kind : k Char_ty.Kind.t) rl =
-  let on_add flaw = add_cp (Char_ty.Flaw.cp flaw) in
-  let on_delete flaw = add_cp (-Char_ty.Flaw.cp flaw) in
-  let options = Char_ty.Flaw.options kind in
+let flaws_list (type k) ~patch ~(kind : k Char_ty.Kind.t) rl =
   editable_list ~title:"Flaws"
     ~roll:(fun () -> Char_ty.Flaw.roll kind)
-    ~options ~on_delete ~on_add ~display_one:Char_ty.Flaw.display
-    ~codec:(Char_ty.Flaw.codec kind) rl
+    ~patch ~display_one:Char_ty.Flaw.display ~codec:(Char_ty.Flaw.codec kind) rl
 
-let creation_points_tile (type k) ~(kind : k Char_ty.Kind.t)
-    ((cp_s, set_cp) : int Reactlib.S.component) =
-  let add_cp i = set_cp (React.S.value cp_s + i) in
-  let flaws_r :
-      k Char_ty.Flaw.t ReactiveData.RList.t
-      * k Char_ty.Flaw.t ReactiveData.RList.handle =
-    ReactiveData.RList.create []
-  in
+let creation_points_tile (type k) ~(kind : k Char_ty.Kind.t) ~patch ~flaws_s
+    cp_s =
   F.div
     ~a:[ F.a_class [ "tile"; "is-parent" ] ]
     [ F.div
@@ -131,39 +116,49 @@ let creation_points_tile (type k) ~(kind : k Char_ty.Kind.t)
         [ F.div
             ~a:[ F.a_class [ "level" ] ]
             [ counter ~label:"Creation points" cp_s ]
-        ; flaws_list ~add_cp ~kind flaws_r
+        ; flaws_list ~patch ~kind flaws_s
         ]
     ]
 
 let char_builder (type k) ~(kind : k Char_ty.Kind.t) () =
   let ((name_s, _) as name_r) = React.S.create "" in
-  let cp_r = React.S.create 20 in
-  [ F.section
-      ~a:[ F.a_class [ "section" ] ]
-      [ F.nav
-          ~a:[ F.a_class [ "navbar" ] ]
-          [ F.div
-              ~a:[ F.a_class [ "container" ] ]
-              [ F.h1
-                  ~a:[ F.a_class [ "title" ] ]
-                  [ F.txt "Character creation"
-                  ; RF.txt
-                    @@ React.S.map
-                         (fun name -> if name = "" then "" else ": " ^ name)
-                         name_s
-                  ]
+  let patch_e, patch = React.E.create () in
+  let build_s =
+    React.S.fold Char_ty.Patch.apply (Char_ty.new_build kind) patch_e
+  in
+  let cp_s = React.S.map (Char_ty.available_cp kind) build_s in
+  [ F.nav
+      ~a:[ F.a_class [ "navbar"; "is-fixed-top"; "is-spaced" ] ]
+      [ F.div
+          ~a:[ F.a_class [ "container" ] ]
+          [ F.div ~a:[ F.a_class [ "navbar-item" ] ] [ counter ~size:5 cp_s ]
+          ; F.h1
+              ~a:[ F.a_class [ "title" ] ]
+              [ F.txt "Character creation"
+              ; RF.txt
+                @@ React.S.map
+                     (fun name -> if name = "" then "" else ": " ^ name)
+                     name_s
               ]
           ]
-      ; F.section
+      ]
+  ; F.section
+      ~a:[ F.a_class [ "section" ] ]
+      [ F.div
           ~a:[ F.a_class [ "container" ] ]
           [ F.div
               ~a:[ F.a_class [ "tile"; "is-ancestor" ] ]
               [ identity_tile ~kind ~name:(`S name_r) ()
-              ; creation_points_tile ~kind cp_r
+              ; creation_points_tile ~kind
+                  ~patch:(fun p -> patch (Char_ty.Patch.Flaw p))
+                  ~flaws_s:(React.S.map (fun b -> b.Char_ty.flaws) build_s)
+                  cp_s
               ]
           ]
       ]
-  ; F.section ~a:[ F.a_class [ "section" ] ] [ Catalog.display ~kind () ]
+  ; F.section
+      ~a:[ F.a_class [ "section" ] ]
+      [ Catalog.display ~kind ~patch ~build_s () ]
   ]
 
 let kind_selector ~set_kind () =
@@ -205,7 +200,9 @@ let display ~popups () =
       char_kind_s
   in
   let body = React.S.l2 ( @ ) char_creator popups in
-  RF.body (ReactiveData.RList.from_signal body)
+  RF.body
+    ~a:[ F.a_class [ "has-navbar-fixed-top" ] ]
+    (ReactiveData.RList.from_signal body)
 
 let () =
   J.Dom_html.window##.onload :=

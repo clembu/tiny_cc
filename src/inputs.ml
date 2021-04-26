@@ -1,8 +1,30 @@
 module J = Js_of_ocaml
+module R = Js_of_ocaml_tyxml.Tyxml_js.R
+module RF = R.Html
 module F = Js_of_ocaml_tyxml.Tyxml_js.Html
 
 let button ~action contents =
   F.button ~a:[ F.a_onclick action; F.a_class [ "button" ] ] contents
+
+let button_r ?(style_s = React.S.const `Normal)
+    ?(disabled_s = React.S.const false) ~action_s contents_s =
+  let class_s =
+    style_s
+    |> React.S.map (function
+         | `Normal -> []
+         | `Primary -> [ "is-primary" ]
+         | `Error -> [ "is-danger" ] )
+    |> React.S.map (fun l -> "button" :: l)
+  in
+  RF.button
+    ~a:
+      [ RF.a_onclick (fun _ ->
+            React.S.value action_s ()
+            ; false )
+      ; R.filter_attrib (F.a_disabled ()) disabled_s
+      ; RF.a_class class_s
+      ]
+    (ReactiveData.RList.from_signal contents_s)
 
 let get_input_value_from_event e =
   J.Js.Opt.map
