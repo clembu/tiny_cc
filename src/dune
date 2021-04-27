@@ -4,4 +4,4 @@
  (js_of_ocaml)
  (flags (:standard -open Core))
  (preprocess (pps js_of_ocaml-ppx ))
- (libraries js_of_ocaml-tyxml react core))
+ (libraries js_of_ocaml-tyxml react core tiny))

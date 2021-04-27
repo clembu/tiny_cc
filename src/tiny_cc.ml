@@ -3,11 +3,11 @@ module R = Js_of_ocaml_tyxml.Tyxml_js.R
 module RF = R.Html
 module F = Js_of_ocaml_tyxml.Tyxml_js.Html
 
-let name_input (type k) ?(init = `Default "") ~(kind : k Char_ty.Kind.t) () =
+let name_input (type k) ?(init = `Default "") ~(kind : k Tiny.Kind.t) () =
   let name =
     match kind with
-    | Char_ty.Kind.Pet -> "pet-char-name"
-    | Char_ty.Kind.Toy -> "toy-char-name"
+    | Tiny.Kind.Pet -> "pet-char-name"
+    | Tiny.Kind.Toy -> "toy-char-name"
   in
   F.div
     ~a:[ F.a_class [ "field" ] ]
@@ -17,7 +17,7 @@ let name_input (type k) ?(init = `Default "") ~(kind : k Char_ty.Kind.t) () =
         [ Inputs.text_input ~value:init ~placeholder:"Ticklebums" () ]
     ]
 
-let identity_tile (type k) ~(kind : k Char_ty.Kind.t) ?name () =
+let identity_tile (type k) ~(kind : k Tiny.Kind.t) ?name () =
   F.div
     ~a:[ F.a_class [ "tile"; "is-parent" ] ]
     [ F.div
@@ -40,8 +40,8 @@ let counter ?size ?label value_s =
     ]
 
 let editable_list ?title ?roll ?options ~patch ~display_one ~codec l_s =
-  let add_one one = patch (Char_ty.Patch.Add one) in
-  let delete one = patch (Char_ty.Patch.Remove one) in
+  let add_one one = patch (Tiny.Patch.Add one) in
+  let delete one = patch (Tiny.Patch.Remove one) in
   let display_one_li one =
     F.li
       ~a:[ F.a_class [ "level"; "is-mobile" ] ]
@@ -102,13 +102,12 @@ let editable_list ?title ?roll ?options ~patch ~display_one ~codec l_s =
        @@ ReactiveData.RList.from_signal l_s )
     @: add_elt_o @? [] )
 
-let flaws_list (type k) ~patch ~(kind : k Char_ty.Kind.t) rl =
+let flaws_list (type k) ~patch ~(kind : k Tiny.Kind.t) rl =
   editable_list ~title:"Flaws"
-    ~roll:(fun () -> Char_ty.Flaw.roll kind)
-    ~patch ~display_one:Char_ty.Flaw.display ~codec:(Char_ty.Flaw.codec kind) rl
+    ~roll:(fun () -> Tiny.Flaw.roll kind)
+    ~patch ~display_one:Tiny.Flaw.display ~codec:(Tiny.Flaw.codec kind) rl
 
-let creation_points_tile (type k) ~(kind : k Char_ty.Kind.t) ~patch ~flaws_s
-    cp_s =
+let creation_points_tile (type k) ~(kind : k Tiny.Kind.t) ~patch ~flaws_s cp_s =
   F.div
     ~a:[ F.a_class [ "tile"; "is-parent" ] ]
     [ F.div
@@ -120,13 +119,13 @@ let creation_points_tile (type k) ~(kind : k Char_ty.Kind.t) ~patch ~flaws_s
         ]
     ]
 
-let char_builder (type k) ~(kind : k Char_ty.Kind.t) () =
+let char_builder (type k) ~(kind : k Tiny.Kind.t) () =
   let ((name_s, _) as name_r) = React.S.create "" in
   let patch_e, patch = React.E.create () in
   let build_s =
-    React.S.fold Char_ty.Patch.apply (Char_ty.new_build kind) patch_e
+    React.S.fold Tiny.Patch.apply (Tiny.Build.new_build kind) patch_e
   in
-  let cp_s = React.S.map (Char_ty.available_cp kind) build_s in
+  let cp_s = React.S.map (Tiny.State.available_cp kind) build_s in
   [ F.nav
       ~a:[ F.a_class [ "navbar"; "is-fixed-top"; "is-spaced" ] ]
       [ F.div
@@ -150,8 +149,8 @@ let char_builder (type k) ~(kind : k Char_ty.Kind.t) () =
               ~a:[ F.a_class [ "tile"; "is-ancestor" ] ]
               [ identity_tile ~kind ~name:(`S name_r) ()
               ; creation_points_tile ~kind
-                  ~patch:(fun p -> patch (Char_ty.Patch.Flaw p))
-                  ~flaws_s:(React.S.map (fun b -> b.Char_ty.flaws) build_s)
+                  ~patch:(fun p -> patch (Tiny.Patch.Flaw p))
+                  ~flaws_s:(React.S.map (fun b -> b.Tiny.Build.flaws) build_s)
                   cp_s
               ]
           ]
@@ -176,12 +175,12 @@ let kind_selector ~set_kind () =
                 ~a:[ F.a_class [ "buttons"; "is-centered" ] ]
                 [ Inputs.button
                     ~action:(fun _ ->
-                      set_kind (Some Char_ty.toy)
+                      set_kind (Some Tiny.Build.toy)
                       ; false )
                     [ Icon.toy (); F.span [ F.txt "Toy" ] ]
                 ; Inputs.button
                     ~action:(fun _ ->
-                      set_kind (Some Char_ty.pet)
+                      set_kind (Some Tiny.Build.pet)
                       ; false )
                     [ Icon.pet (); F.span [ F.txt "Pet" ] ]
                 ]
@@ -195,8 +194,8 @@ let display ~popups () =
     React.S.map
       (function
         | None -> [ kind_selector ~set_kind () ]
-        | Some (Char_ty.Pet kind) -> char_builder ~kind ()
-        | Some (Char_ty.Toy kind) -> char_builder ~kind () )
+        | Some (Tiny.Build.Pet kind) -> char_builder ~kind ()
+        | Some (Tiny.Build.Toy kind) -> char_builder ~kind () )
       char_kind_s
   in
   let body = React.S.l2 ( @ ) char_creator popups in
