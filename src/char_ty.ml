@@ -37,7 +37,35 @@ module Power = struct
     | Transformation : Kind.toy t
     | Malleable : Kind.toy t
 
-  let cp : type k. k t -> int = fun _ -> 1
+  let cp : type k. k t -> int = function
+    | Pretty -> 2
+    | Strength -> 1
+    | Dream -> 2
+    | Intimidation -> 1
+    | Flight -> 2
+    | Claws -> 1
+    | Leap -> 1
+    | HumanBFF -> 2
+    | Voice_module -> 1
+    | Accessories -> 1
+    | Imaginary_friend -> 1
+    | Authority -> 2
+    | Elite_skill -> 1
+    | Construction -> 4
+    | Growth -> 2
+    | Teddy -> 2
+    | Odd_shape -> 1
+    | Gigantism -> 2
+    | Healing -> 2
+    | Smarts -> 1
+    | Licensed -> 1
+    | Motorized -> 1
+    | Multiplicity -> 2
+    | Punching_ball -> 1
+    | Slinky -> 1
+    | Tough -> 2
+    | Transformation -> 1
+    | Malleable -> 2
 
   let options : type k. k Kind.t -> k t list = function
     | Kind.Pet ->
