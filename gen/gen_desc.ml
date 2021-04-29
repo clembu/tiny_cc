@@ -10,6 +10,13 @@ let mk_exp desc =
   ; pexp_attributes = []
   }
 
+let mk_typ desc =
+  { P.ptyp_desc = desc
+  ; ptyp_loc = L.none
+  ; ptyp_loc_stack = []
+  ; ptyp_attributes = []
+  }
+
 (* does not reverse the list *)
 let rec mk_list = function
   | [] ->
@@ -53,15 +60,16 @@ let rec inline_to_ml { O.il_desc = il; _ } =
   | O.Strong il -> to_ls_apply "strong" @@ inline_to_ml_wrap il
   | O.Code s ->
       to_ls_apply "code" (Parse.expression <<$ Printf.sprintf "[F.txt \"%s\"]" s)
-  | O.Html _ -> failwith "UNSUPPORTED"
+  | O.Html _ -> failwith "UNSUPPORTED HTML"
   | O.Link { O.label; O.destination; _ } ->
       if destination = "" then to_ls_apply "span" @@ inline_to_ml_wrap label
       else
         Parse.expression
-        <<$ Printf.sprintf "%s.display %s" (inline_to_rawstr label) destination
-  | O.Image _ -> failwith "UNSUPPORTED"
+        <<$ Printf.sprintf "F.strong [F.txt (Tiny.%s.display Tiny.%s.%s)]"
+              (inline_to_rawstr label) (inline_to_rawstr label) destination
+  | O.Image _ -> failwith "UNSUPPORTED IMAGE"
   | O.Soft_break -> Parse.expression <<$ "F.br ()"
-  | O.Hard_break -> failwith "UNSUPPORTED"
+  | O.Hard_break -> failwith "UNSUPPORTED HARDBREAK"
 
 and inline_to_ml_wrap ({ O.il_desc = ild; _ } as il) =
   match ild with
@@ -87,12 +95,12 @@ and block_to_ml = function
   | O.Blockquote l ->
       to_ls_apply "blockquote" @@ mk_list
       @@ List.map (fun b -> block_to_ml b.O.bl_desc) l
-  | O.Thematic_break -> Parse.expression @@ Lexing.from_string @@ "F.hr"
+  | O.Thematic_break -> Parse.expression @@ Lexing.from_string @@ "F.hr ()"
   | O.Heading (n, il) ->
       to_ls_apply (Printf.sprintf "h%d" n) @@ inline_to_ml_wrap il
-  | O.Code_block _ -> failwith "UNSUPPORTED"
-  | O.Html_block _ -> failwith "UNSUPPORTED"
-  | O.Definition_list _ -> failwith "UNSUPPORTED"
+  | O.Code_block _ -> failwith "UNSUPPORTED CODEBLOCK"
+  | O.Html_block _ -> failwith "UNSUPPORTED HTMLBLOCK"
+  | O.Definition_list _ -> failwith "UNSUPPORTED DEFLIST"
 
 let mk_case m (`Desc (s, md)) =
   { P.pc_lhs =
@@ -110,7 +118,18 @@ let mk_case m (`Desc (s, md)) =
   ; pc_rhs = mk_list @@ List.rev_map block_to_ml @@ md
   }
 
-let show_fun m descs =
+let dummy_case () =
+  { P.pc_lhs =
+      { ppat_desc = P.Ppat_any
+      ; ppat_loc = L.none
+      ; ppat_loc_stack = []
+      ; ppat_attributes = []
+      }
+  ; pc_guard = None
+  ; pc_rhs = mk_list []
+  }
+
+let show_fun tyvars m descs =
   { P.pstr_desc =
       P.Pstr_value
         ( A.Nonrecursive
@@ -120,7 +139,43 @@ let show_fun m descs =
                 ; ppat_loc_stack = []
                 ; ppat_attributes = []
                 }
-            ; pvb_expr = mk_exp (P.Pexp_function (List.map (mk_case m) descs))
+            ; pvb_expr =
+                List.fold_left
+                  (fun exp tyvar ->
+                    mk_exp
+                      (P.Pexp_newtype ({ A.loc = L.none; A.txt = tyvar }, exp))
+                    )
+                  (mk_exp
+                     (P.Pexp_constraint
+                        ( mk_exp
+                            (P.Pexp_function
+                               (List.map (mk_case m) descs @ [ dummy_case () ])
+                            )
+                        , mk_typ
+                            (P.Ptyp_arrow
+                               ( A.Nolabel
+                               , mk_typ
+                                   (P.Ptyp_constr
+                                      ( { A.loc = L.none
+                                        ; A.txt =
+                                            Parse.longident
+                                            <<$ Printf.sprintf "Tiny.%s.t" m
+                                        }
+                                      , List.map
+                                          (fun tyvar ->
+                                            mk_typ
+                                              (P.Ptyp_constr
+                                                 ( { A.loc = L.none
+                                                   ; A.txt =
+                                                       Parse.longident <<$ tyvar
+                                                   }
+                                                 , [] ) ) )
+                                          tyvars ) )
+                               , Parse.core_type
+                                 <<$ "Html_types.article_content \
+                                      Js_of_ocaml_tyxml.Tyxml_js.Html.elt list"
+                               ) ) ) ) )
+                  tyvars
             ; pvb_attributes = []
             ; pvb_loc = L.none
             }
@@ -133,7 +188,13 @@ let to_module (`Mod (m, descs)) =
       Pstr_module
         { pmb_name = { A.loc = L.none; A.txt = Some m }
         ; pmb_expr =
-            { pmod_desc = P.Pmod_structure [ show_fun m descs ]
+            { pmod_desc =
+                P.Pmod_structure
+                  [ (let tyvars =
+                       match m with "Skill" -> [ "c"; "s" ] | _ -> [ "k" ]
+                     in
+                     show_fun tyvars m descs )
+                  ]
             ; pmod_loc = L.none
             ; pmod_attributes = []
             }

@@ -1,3 +1,11 @@
+(rule
+  (target descr.ml)
+  (deps (:md ../descriptions.md))
+ (action
+   (run %{exe:../gen/gen_desc.exe} %{md} %{target})
+ )
+)
+
 (executable
  (name tiny_cc)
  (modes js)
