@@ -51,7 +51,7 @@ let catalog_list ~title ~display_one ~describe ~build_state ~patch l =
                       [ F.p
                           ~a:[ F.a_class [ "title" ] ]
                           [ F.txt @@ display_one one ]
-                      ; F.article (describe one)
+                      ; F.article ~a:[ F.a_class [ "content" ] ] (describe one)
                       ]
                   ]
                 ; false )

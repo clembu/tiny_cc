@@ -75,7 +75,7 @@ type (_, _) t =
   | Town : (G.smart, S.g) t
   | Etiquette : (G.smart, S.g) t
   | History : (G.smart, S.g) t
-  | Mecanics : (G.smart, S.g) t
+  | Mechanics : (G.smart, S.g) t
   | Memorizing : (G.smart, S.g) t
   | Religion : (G.smart, S.g) t
   | Remembering : (G.smart, S.g) t
@@ -152,7 +152,7 @@ let display : type g s. (g, s) t -> string = function
   | Town -> "Town"
   | Etiquette -> "Etiquette"
   | History -> "History"
-  | Mecanics -> "Mecanics"
+  | Mechanics -> "Mechanics"
   | Memorizing -> "Memorizing"
   | Religion -> "Religion"
   | Remembering -> "Remembering"
@@ -251,7 +251,7 @@ let options : type g s. g group -> s ty -> (g, s) t list = function
           ; Town
           ; Etiquette
           ; History
-          ; Mecanics
+          ; Mechanics
           ; Memorizing
           ; Religion
           ; Remembering

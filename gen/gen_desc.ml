@@ -1,3 +1,4 @@
+open Core
 module P = Parsetree
 module A = Asttypes
 module L = Location
@@ -55,26 +56,30 @@ let to_ls_apply f lexp =
 let rec inline_to_ml { O.il_desc = il; _ } =
   match il with
   | O.Concat _ -> assert false
-  | O.Text s -> Parse.expression <<$ Printf.sprintf "F.txt \"%s\"" s
-  | O.Emph il -> to_ls_apply "em" @@ inline_to_ml_wrap il
-  | O.Strong il -> to_ls_apply "strong" @@ inline_to_ml_wrap il
+  | O.Text s -> Some (Parse.expression <<$ Printf.sprintf "F.txt \"%s\"" s)
+  | O.Emph il -> Option.some @@ to_ls_apply "em" @@ inline_to_ml_wrap il
+  | O.Strong il -> Option.some @@ to_ls_apply "strong" @@ inline_to_ml_wrap il
   | O.Code s ->
-      to_ls_apply "code" (Parse.expression <<$ Printf.sprintf "[F.txt \"%s\"]" s)
-  | O.Html _ -> failwith "UNSUPPORTED HTML"
+      Option.some
+      @@ to_ls_apply "code"
+           (Parse.expression <<$ Printf.sprintf "[F.txt \"%s\"]" s)
+  | O.Html _ -> None
   | O.Link { O.label; O.destination; _ } ->
+      Option.some
+      @@
       if destination = "" then to_ls_apply "span" @@ inline_to_ml_wrap label
       else
         Parse.expression
         <<$ Printf.sprintf "F.strong [F.txt (Tiny.%s.display Tiny.%s.%s)]"
               (inline_to_rawstr label) (inline_to_rawstr label) destination
-  | O.Image _ -> failwith "UNSUPPORTED IMAGE"
-  | O.Soft_break -> Parse.expression <<$ "F.br ()"
-  | O.Hard_break -> failwith "UNSUPPORTED HARDBREAK"
+  | O.Image _ -> None
+  | O.Soft_break -> Some (Parse.expression <<$ "F.txt \" \"")
+  | O.Hard_break -> Some (Parse.expression <<$ "F.br ()")
 
 and inline_to_ml_wrap ({ O.il_desc = ild; _ } as il) =
   match ild with
-  | O.Concat l -> mk_list @@ List.map inline_to_ml l
-  | _ -> mk_list @@ [ inline_to_ml il ]
+  | O.Concat l -> mk_list @@ List.filter_map inline_to_ml l
+  | _ -> mk_list @@ inline_to_ml il @? []
 
 and block_to_ml = function
   | O.Paragraph il -> to_ls_apply "p" @@ inline_to_ml_wrap il

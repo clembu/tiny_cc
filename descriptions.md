@@ -148,8 +148,8 @@ This skill allows to **drive** any and all land vehicles,
 real or dreamt.
 It also allows for **maintenance**, but **not for repair**
 (that much is handled on a case-by-case
-basis, depending on the nature of the vehicle: Electronics,
-Mechanics, etc.)
+basis, depending on the nature of the vehicle: [Skill](Mechanics),
+[Skill](Electronics), etc.)
 
 A character can drive a vehicle with a successful
 [Skill](Driving_land)
@@ -157,7 +157,130 @@ roll, up to a scale difference allowed by the _Interactions_ table.
 Beyond that, it'll be impossible because
 the vehicle is too small, or a group effort because it is too big.
 
+---
+
 Driving an actual real-life car will require 5 toys at least.
+
+## Counterfeit
+
+This skill allows to **recognize** and **falsify** objects or documents.
+
+A [Skill](Counterfeit) roll specifically will help
+**determine particular details** to imitate
+(signature, handwriting, formalisms, etc),
+but it's the following actual fabricating roll (often [Skill](Handling))
+that will determine the craftsmanship and quality.
+
+## Explosives
+
+This skill allows to use **demolition explosives** or **fireworks**
+without risking an injury.
+
+---
+
+To _make_ explosives, you need to apply your knowledge of [Skill](Chemistry)
+
+## Swimming
+
+This skill allows **non-metallic** toys and animals to **float** and **swim**.
+
+Even though they can't drown in real life, when in dreams toys _can faint_.
+For animals, of course, they can drown in real life.
+
+---
+
+Swimming AP cost table:
+
+- **Normal** pace: **1AP** for **10 minutes**
+- **Fast** pace: **1AP** for **1 minutes**
+
+Under normal circumstances, while the character has more than 10 AP,
+no roll is necessary and the character can swim without any issue.
+Under 10 AP, the character can only float.
+
+Outside of normal circumstances, rolls will be done against this skill:
+fast currents, carrying someone else, big waves, etc.
+
+## Parrying
+
+This skill allows to **use reactions** to parry enemy attacks.
+
+## Pocketpicking
+
+This skill allows to **snatch** things from someone's personage,
+without them realizing it.
+
+---
+
+A single successful roll allows to either
+
+- Learn what's in their pockets
+- Snatch something at random
+
+To recover a specific object, one must roll twice: once to ascertain
+the contents of the pockets, another time to snatch the desired item.
+
+On roll failure, the target becomes immediately aware of the attempt.
+
+## Piloting_air
+
+This skill allows to **pilot** any aerial vehicle: plane, glider, chopper...
+real or dreamt.
+It also allows for **maintenance**, but **not for repair**
+(that much is handled on a case-by-case
+basis, depending on the nature of the vehicle: [Skill](Mechanics),
+[Skill](Electronics), etc.)
+
+A character can pilot a vehicle with a successful
+[Skill](Piloting_air)
+roll, up to a scale difference allowed by the _Interactions_ table.
+Beyond that, it'll be impossible because
+the vehicle is too small, or a group effort because it is too big.
+
+---
+
+Driving an actual real-life plane will require 6 toys at least.
+
+## Piloting_sea
+
+This skill allows to **pilot** any marine vehicle:
+jetski, sailboat, submarine... real or dreamt.
+It also allows for **maintenance**, but **not for repair**
+(that much is handled on a case-by-case
+basis, depending on the nature of the vehicle: [Skill](Mechanics),
+[Skill](Electronics), etc.)
+
+A character can pilot a vehicle with a successful
+[Skill](Piloting_sea)
+roll, up to a scale difference allowed by the _Interactions_ table.
+Beyond that, it'll be impossible because
+the vehicle is too small, or a group effort because it is too big.
+
+---
+
+Driving an actual real-life small sailboat will require 10 toys at least.
+
+## Repair
+
+This skill allows to **repair** broken or torn toys,
+and void any effect suffered from a 10+AP injury.
+
+Repairing **takes time** and often requires **tools and materials**.
+
+It is necessary to successfully roll on a difficulty depending on the
+state of the toy to be repaired (see mending table below)
+
+Beyond a cleaning or washing, repair will leave a mark: broken pieces replaced
+with different colored pieces, glue/solder marks, etc. Unless the character
+boosts the difficulty by 1.
+
+### Mending table
+
+- **Stained** : 1D6, 10min
+- **Bent** : 1D8, 10min
+- **Dirty** : 1D10, 30min
+- **Torn** : 1D12, 1h
+- **Broken** : 1D20, 5h
 
 # Power
 

@@ -6,4 +6,4 @@
 (executable
  (name gen_desc)
  (modules Gen_desc)
- (libraries omd compiler-libs.common cmdliner))
+ (libraries omd compiler-libs.common core cmdliner))

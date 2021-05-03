@@ -66,7 +66,7 @@ type (_, _) t =
   | Town : (G.smart, S.g) t
   | Etiquette : (G.smart, S.g) t
   | History : (G.smart, S.g) t
-  | Mecanics : (G.smart, S.g) t
+  | Mechanics : (G.smart, S.g) t
   | Memorizing : (G.smart, S.g) t
   | Religion : (G.smart, S.g) t
   | Remembering : (G.smart, S.g) t
