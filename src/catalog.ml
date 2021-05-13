@@ -131,7 +131,9 @@ let skill_group_catalog (type k g) ~(kind : k Kind.t) ~(group : g Skill.group)
     ; skill_group_bonus_input ~kind ~group
         ~build_state:(fun i ->
           React.S.map ~eq:( == )
-            (fun b -> State.skill_group_build_state kind b group i)
+            (fun b ->
+              let additional_cost = i - Build.group_bonus group b in
+              State.skill_group_build_state kind b group additional_cost )
             build_s )
         ~value_s:(React.S.map (Build.group_bonus group) build_s)
         ~patch:(fun p -> patch (Patch.Set_bonus p))
