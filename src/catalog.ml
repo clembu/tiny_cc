@@ -46,14 +46,17 @@ let catalog_list ~title ~display_one ~describe ~build_state ~patch l =
           ; Inputs.button
               ~action:(fun _ ->
                 Popup.open_popup
-                  [ F.div
-                      ~a:[ F.a_class [ "block" ] ]
-                      [ F.p
-                          ~a:[ F.a_class [ "title" ] ]
-                          [ F.txt @@ display_one one ]
-                      ; F.article ~a:[ F.a_class [ "content" ] ] (describe one)
-                      ]
-                  ]
+                @@ Popup.Box
+                     [ F.div
+                         ~a:[ F.a_class [ "block" ] ]
+                         [ F.p
+                             ~a:[ F.a_class [ "title" ] ]
+                             [ F.txt @@ display_one one ]
+                         ; F.article
+                             ~a:[ F.a_class [ "content" ] ]
+                             (describe one)
+                         ]
+                     ]
                 ; false )
               [ Icon.question () ]
           ]
@@ -86,12 +89,53 @@ let powers_catalog (type k) ~(kind : k Kind.t) ~patch ~build_s () =
       @@ Power.options kind
     ]
 
+let skill_group_bonus_input (type k g) ~(kind : k Tiny.Kind.t)
+    ~(group : g Tiny.Skill.group) ~build_state ~value_s ~patch () =
+  let name =
+    match kind with
+    | Tiny.Kind.Pet -> "pet-char-group-bonus-" ^ Tiny.Skill.group_name group
+    | Tiny.Kind.Toy -> "toy-char-name" ^ Tiny.Skill.group_name group
+  in
+  let max_value = Build.max_group_bonus kind in
+  let mk_button i =
+    let disabled_s =
+      React.S.map
+        (function `Can_change -> false | `Cannot_change -> true)
+        (build_state i)
+    in
+    let checked_s = React.S.map (fun v -> v >= i) value_s in
+    let style_s =
+      React.S.map
+        (fun checked -> if checked then `Primary else `Normal)
+        checked_s
+    in
+    let action_s = React.S.const (fun () -> patch i) in
+    Inputs.button_r ~rounded:true ~style_s ~disabled_s ~action_s
+      (React.S.const [ F.txt (string_of_int i) ])
+  in
+  let buttons = List.map mk_button @@ List.init (max_value + 1) Fun.id in
+  F.div
+    ~a:[ F.a_class [ "field" ] ]
+    [ F.label ~a:[ F.a_class [ "label" ]; F.a_label_for name ] [ F.txt "Bonus" ]
+    ; F.div
+        ~a:[ F.a_class [ "control" ] ]
+        [ F.div ~a:[ F.a_class [ "buttons" ] ] buttons ]
+    ]
+
 let skill_group_catalog (type k g) ~(kind : k Kind.t) ~(group : g Skill.group)
     ~patch ~build_s () =
   Layout.tile_box
     [ F.p
         ~a:[ F.a_class [ "title"; "is-3" ] ]
         [ F.txt (Skill.group_name group); F.txt " skills" ]
+    ; skill_group_bonus_input ~kind ~group
+        ~build_state:(fun i ->
+          React.S.map ~eq:( == )
+            (fun b -> State.skill_group_build_state kind b group i)
+            build_s )
+        ~value_s:(React.S.map (Build.group_bonus group) build_s)
+        ~patch:(fun p -> patch (Patch.Set_bonus p))
+        ()
     ; catalog_list ~title:"General skills" ~display_one:Skill.display
         ~build_state:(fun s ->
           React.S.map ~eq:( == )

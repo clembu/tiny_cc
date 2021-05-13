@@ -6,7 +6,7 @@ module F = Js_of_ocaml_tyxml.Tyxml_js.Html
 let button ~action contents =
   F.button ~a:[ F.a_onclick action; F.a_class [ "button" ] ] contents
 
-let button_r ?(style_s = React.S.const `Normal)
+let button_r ?(rounded = false) ?(style_s = React.S.const `Normal)
     ?(disabled_s = React.S.const false) ~action_s contents_s =
   let class_s =
     style_s
@@ -14,7 +14,8 @@ let button_r ?(style_s = React.S.const `Normal)
          | `Normal -> []
          | `Primary -> [ "is-primary" ]
          | `Error -> [ "is-danger" ] )
-    |> React.S.map (fun l -> "button" :: l)
+    |> React.S.map (fun l ->
+           "button" :: (if rounded then "is-rounded" :: l else l) )
   in
   RF.button
     ~a:

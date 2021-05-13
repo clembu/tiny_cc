@@ -15,3 +15,6 @@ let check () = wrap [ "fas"; "fa-check" ]
 let plus () = wrap [ "fas"; "fa-plus" ]
 
 let cross () = wrap [ "fas"; "fa-times" ]
+
+let kind_icon (type k) (k : k Tiny.Kind.t) () =
+  match k with Tiny.Kind.Pet -> pet () | Tiny.Kind.Toy -> toy ()

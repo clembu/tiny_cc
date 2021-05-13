@@ -25,20 +25,6 @@ let identity_tile (type k) ~(kind : k Tiny.Kind.t) ?name () =
         [ name_input ?init:name ~kind () ]
     ]
 
-let counter ?size ?label value_s =
-  let size_class = Option.map (fun s -> "is-" ^ string_of_int s) size in
-  F.div
-    ~a:[ F.a_class [ "level-item"; "has-text-centered" ] ]
-    [ F.div
-        ( Option.map
-            (fun label -> F.p ~a:[ F.a_class [ "heading" ] ] [ F.txt label ])
-            label
-        @? [ F.p
-               ~a:[ F.a_class (size_class @? [ "title" ]) ]
-               [ RF.txt @@ React.S.map string_of_int value_s ]
-           ] )
-    ]
-
 let editable_list ?title ?roll ?options ~patch ~display_one ~codec l_s =
   let add_one one = patch (Tiny.Patch.Add one) in
   let delete one = patch (Tiny.Patch.Remove one) in
@@ -114,7 +100,7 @@ let creation_points_tile (type k) ~(kind : k Tiny.Kind.t) ~patch ~flaws_s cp_s =
         ~a:[ F.a_class [ "tile"; "is-child"; "box" ] ]
         [ F.div
             ~a:[ F.a_class [ "level" ] ]
-            [ counter ~label:"Creation points" cp_s ]
+            [ Values.counter ~label:"Creation points" cp_s ]
         ; flaws_list ~patch ~kind flaws_s
         ]
     ]
@@ -125,12 +111,14 @@ let char_builder (type k) ~(kind : k Tiny.Kind.t) () =
   let build_s =
     React.S.fold Tiny.Patch.apply (Tiny.Build.new_build kind) patch_e
   in
-  let cp_s = React.S.map (Tiny.State.available_cp kind) build_s in
+  let cp_s = React.S.map Tiny.State.available_cp build_s in
   [ F.nav
       ~a:[ F.a_class [ "navbar"; "is-fixed-top"; "is-spaced" ] ]
       [ F.div
           ~a:[ F.a_class [ "container" ] ]
-          [ F.div ~a:[ F.a_class [ "navbar-item" ] ] [ counter ~size:5 cp_s ]
+          [ F.div
+              ~a:[ F.a_class [ "navbar-item" ] ]
+              [ Values.counter ~size:5 cp_s ]
           ; F.h1
               ~a:[ F.a_class [ "title" ] ]
               [ F.txt "Character creation"
@@ -138,6 +126,19 @@ let char_builder (type k) ~(kind : k Tiny.Kind.t) () =
                 @@ React.S.map
                      (fun name -> if name = "" then "" else ": " ^ name)
                      name_s
+              ]
+          ; F.div
+              ~a:[ F.a_class [ "navbar-end" ] ]
+              [ F.button
+                  ~a:
+                    [ F.a_onclick (fun _ ->
+                          Sumup.display ~name:(React.S.value name_s)
+                            (React.S.value build_s)
+                          |> Popup.open_popup
+                          ; false )
+                    ; F.a_class [ "navbar-item"; "button" ]
+                    ]
+                  [ F.txt "Check" ]
               ]
           ]
       ]
@@ -177,12 +178,16 @@ let kind_selector ~set_kind () =
                     ~action:(fun _ ->
                       set_kind (Some Tiny.Build.toy)
                       ; false )
-                    [ Icon.toy (); F.span [ F.txt "Toy" ] ]
+                    [ Icon.toy ()
+                    ; F.span [ F.txt @@ Tiny.Kind.display Tiny.Kind.Toy ]
+                    ]
                 ; Inputs.button
                     ~action:(fun _ ->
                       set_kind (Some Tiny.Build.pet)
                       ; false )
-                    [ Icon.pet (); F.span [ F.txt "Pet" ] ]
+                    [ Icon.pet ()
+                    ; F.span [ F.txt @@ Tiny.Kind.display Tiny.Kind.Pet ]
+                    ]
                 ]
             ]
         ]

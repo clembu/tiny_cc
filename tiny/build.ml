@@ -46,3 +46,22 @@ type char_kind = Pet of Kind.pet Kind.t | Toy of Kind.toy Kind.t
 let pet = Pet Kind.Pet
 
 let toy = Toy Kind.Toy
+
+let group_bonus (type k g) (g : g Skill.group) ({ skills; _ } : k char_build) =
+  match g with
+  | Skill.Agile -> skills.agile_skills.skill_group_bonus
+  | Skill.Tough -> skills.tough_skills.skill_group_bonus
+  | Skill.Smart -> skills.smart_skills.skill_group_bonus
+  | Skill.Fast -> skills.fast_skills.skill_group_bonus
+  | Skill.Cute -> skills.cute_skills.skill_group_bonus
+  | Skill.Perceptive -> skills.perceptive_skills.skill_group_bonus
+  | Skill.Strong -> skills.strong_skills.skill_group_bonus
+
+let max_group_bonus (type k) (k : k Kind.t) =
+  match k with Kind.Pet -> 3 | Kind.Toy -> 2
+
+let max_power_cost (type k) (k : k Kind.t) =
+  match k with Kind.Pet -> 3 | Kind.Toy -> 4
+
+let min_skills_investment (type k) (k : k Kind.t) =
+  match k with Kind.Pet -> 8 | Kind.Toy -> 10

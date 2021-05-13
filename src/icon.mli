@@ -11,3 +11,5 @@ val check : [> `Span ] icon
 val plus : [> `Span ] icon
 
 val cross : [> `Span ] icon
+
+val kind_icon : 'k Tiny.Kind.t -> [> `Span ] icon

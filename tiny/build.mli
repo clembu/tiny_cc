@@ -29,3 +29,11 @@ type char_kind = Pet of Kind.pet Kind.t | Toy of Kind.toy Kind.t
 val pet : char_kind
 
 val toy : char_kind
+
+val group_bonus : 'g Skill.group -> 'k char_build -> int
+
+val max_group_bonus : 'k Kind.t -> int
+
+val max_power_cost : 'k Kind.t -> int
+
+val min_skills_investment : 'k Kind.t -> int
