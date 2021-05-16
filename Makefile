@@ -4,6 +4,7 @@ SRC_DIR=src
 SASS_DIR=sass
 SASS_LIB_DIR=${SASS_DIR}/lib
 SASS_VENDOR_DIR=${SASS_DIR}/vendor/
+SASS_CMD?=/usr/bin/sass
 
 DUNE_PREFIX=_build/default
 JS_TARGET=${SRC_DIR}/tiny_cc.bc.js
@@ -20,7 +21,7 @@ OUT_FILE=docs/index.html
 all: html
 
 css: ${BUILD_DIR} ${SASS_DIR}/*
-	/usr/bin/sass -I ${SASS_VENDOR_DIR} -I ${SASS_LIB_DIR} --style=compressed ${SASS_FILE} ${BUILD_DIR}/tiny.css
+	$SASS_CMD -I ${SASS_VENDOR_DIR} -I ${SASS_LIB_DIR} --style=compressed ${SASS_FILE} ${BUILD_DIR}/tiny.css
 
 js: ${BUILD_DIR} ${JS_TARGET}
 	rm -f ${BUILD_DIR}/tiny_cc.js
