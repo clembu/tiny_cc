@@ -4,7 +4,7 @@ SRC_DIR=src
 SASS_DIR=sass
 SASS_LIB_DIR=${SASS_DIR}/lib
 SASS_VENDOR_DIR=${SASS_DIR}/vendor/
-SASS_CMD?=/usr/bin/sass
+SASS_CMD = /usr/bin/sass
 
 DUNE_PREFIX=_build/default
 JS_TARGET=${SRC_DIR}/tiny_cc.bc.js
