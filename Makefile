@@ -21,7 +21,7 @@ OUT_FILE=docs/index.html
 all: html
 
 css: ${BUILD_DIR} ${SASS_DIR}/*
-	$SASS_CMD -I ${SASS_VENDOR_DIR} -I ${SASS_LIB_DIR} --style=compressed ${SASS_FILE} ${BUILD_DIR}/tiny.css
+	${SASS_CMD} -I ${SASS_VENDOR_DIR} -I ${SASS_LIB_DIR} --style=compressed ${SASS_FILE} ${BUILD_DIR}/tiny.css
 
 js: ${BUILD_DIR} ${JS_TARGET}
 	rm -f ${BUILD_DIR}/tiny_cc.js
