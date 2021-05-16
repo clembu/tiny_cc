@@ -26,7 +26,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Build
+      - name: Setup
         uses: avsm/setup-ocaml@v2
         with:
           ocaml-compiler: 4.12.0
@@ -34,8 +34,15 @@ jobs:
           opam-pin: false
           
       - run: opam install dune tyxml omd js_of_ocaml cmdliner js_of_ocaml-tyxml js_of_ocaml-ppx react
+
+      - uses: actions/setup-node@v2
+        with:
+          node-version: '14'
       
-      - run: opam exec -- make html
+      - run: npm install -g sass
+
+      - name: Build
+        run: opam exec -- make html
       
       - name: Deploy 🚀
         uses: JamesIves/github-pages-deploy-action@4.1.3
