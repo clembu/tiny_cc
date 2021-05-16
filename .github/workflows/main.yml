@@ -42,7 +42,7 @@ jobs:
       - run: npm install -g sass
 
       - name: Build
-        run: SASS_CMD=sass opam exec -- make html
+        run: opam exec -- make html SASS_CMD=sass
       
       - name: Deploy 🚀
         uses: JamesIves/github-pages-deploy-action@4.1.3
