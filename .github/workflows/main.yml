@@ -2,13 +2,13 @@
 
 name: CI
 
-# Controls when the action will run. 
+# Controls when the action will run.
 on:
   # Triggers the workflow on push or pull request events but only for the master branch
   push:
-    branches: [ master ]
+    branches: [master]
   pull_request:
-    branches: [ master ]
+    branches: [master]
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
@@ -26,7 +26,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
         with:
-          submodules: 'recursive'
+          submodules: "recursive"
 
       - name: Setup
         uses: avsm/setup-ocaml@v2
@@ -34,18 +34,18 @@ jobs:
           ocaml-compiler: 4.12.0
           opam-depext: false
           opam-pin: false
-          
-      - run: opam install dune tyxml omd js_of_ocaml cmdliner js_of_ocaml-tyxml js_of_ocaml-ppx react
+
+      - run: opam install .
 
       - uses: actions/setup-node@v2
         with:
-          node-version: '14'
-      
+          node-version: "14"
+
       - run: npm install -g sass
 
       - name: Build
         run: opam exec -- make html SASS_CMD=sass
-      
+
       - name: Deploy 🚀
         uses: JamesIves/github-pages-deploy-action@4.1.3
         with:
