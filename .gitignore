@@ -167,5 +167,6 @@ _opam/
 # End of https://www.toptal.com/developers/gitignore/api/ocaml
 
 _out/
+docs/
 
 local.Makefile
