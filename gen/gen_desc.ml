@@ -30,16 +30,15 @@ let rec mk_list = function
            ( { A.loc = L.none; A.txt = Longident.Lident "::" }
            , Some (mk_exp (P.Pexp_tuple [ h; mk_list l ])) ) )
 
-let rec inline_to_rawstr il =
-  match il.O.il_desc with
-  | O.Concat l -> List.fold_left (fun s x -> s ^ inline_to_rawstr x) "" l
-  | O.Text s | O.Code s | O.Html s -> s
-  | O.Emph i
-  | O.Strong i
-  | O.Link { O.label = i; _ }
-  | O.Image { O.label = i; _ } ->
+let rec inline_to_rawstr = function
+  | O.Concat (_, l) -> List.fold_left (fun s x -> s ^ inline_to_rawstr x) "" l
+  | O.Text (_, s) | O.Code (_, s) | O.Html (_, s) -> s
+  | O.Emph (_, i)
+  | O.Strong (_, i)
+  | O.Link (_, { O.label = i; _ })
+  | O.Image (_, { O.label = i; _ }) ->
       inline_to_rawstr i
-  | O.Hard_break | O.Soft_break -> ""
+  | O.Hard_break _ | O.Soft_break _ -> ""
 
 let ( <<$ ) f s = f @@ Lexing.from_string s
 
@@ -53,18 +52,18 @@ let to_ls_apply f lexp =
               } )
        , [ (A.Nolabel, lexp) ] ) )
 
-let rec inline_to_ml { O.il_desc = il; _ } =
-  match il with
+let rec inline_to_ml = function
   | O.Concat _ -> assert false
-  | O.Text s -> Some (Parse.expression <<$ Printf.sprintf "F.txt \"%s\"" s)
-  | O.Emph il -> Option.some @@ to_ls_apply "em" @@ inline_to_ml_wrap il
-  | O.Strong il -> Option.some @@ to_ls_apply "strong" @@ inline_to_ml_wrap il
-  | O.Code s ->
+  | O.Text (_, s) -> Some (Parse.expression <<$ Printf.sprintf "F.txt \"%s\"" s)
+  | O.Emph (_, il) -> Option.some @@ to_ls_apply "em" @@ inline_to_ml_wrap il
+  | O.Strong (_, il) ->
+      Option.some @@ to_ls_apply "strong" @@ inline_to_ml_wrap il
+  | O.Code (_, s) ->
       Option.some
       @@ to_ls_apply "code"
            (Parse.expression <<$ Printf.sprintf "[F.txt \"%s\"]" s)
   | O.Html _ -> None
-  | O.Link { O.label; O.destination; _ } ->
+  | O.Link (_, { O.label; O.destination; _ }) ->
       Option.some
       @@
       if destination = "" then to_ls_apply "span" @@ inline_to_ml_wrap label
@@ -73,35 +72,29 @@ let rec inline_to_ml { O.il_desc = il; _ } =
         <<$ Printf.sprintf "F.strong [F.txt (Tiny.%s.display Tiny.%s.%s)]"
               (inline_to_rawstr label) (inline_to_rawstr label) destination
   | O.Image _ -> None
-  | O.Soft_break -> Some (Parse.expression <<$ "F.txt \" \"")
-  | O.Hard_break -> Some (Parse.expression <<$ "F.br ()")
+  | O.Soft_break _ -> Some (Parse.expression <<$ "F.txt \" \"")
+  | O.Hard_break _ -> Some (Parse.expression <<$ "F.br ()")
 
-and inline_to_ml_wrap ({ O.il_desc = ild; _ } as il) =
-  match ild with
-  | O.Concat l -> mk_list @@ List.filter_map inline_to_ml l
-  | _ -> mk_list @@ inline_to_ml il @? []
+and inline_to_ml_wrap = function
+  | O.Concat (_, l) -> mk_list @@ List.filter_map inline_to_ml l
+  | il -> mk_list @@ inline_to_ml il @? []
 
 and block_to_ml = function
-  | O.Paragraph il -> to_ls_apply "p" @@ inline_to_ml_wrap il
-  | O.List (Bullet _, _, l) ->
+  | O.Paragraph (_, il) -> to_ls_apply "p" @@ inline_to_ml_wrap il
+  | O.List (_, Bullet _, _, l) ->
       to_ls_apply "ul" @@ mk_list
       @@ List.map
-           (fun bls ->
-             to_ls_apply "li" @@ mk_list
-             @@ List.map (fun b -> block_to_ml b.O.bl_desc) bls )
+           (fun bls -> to_ls_apply "li" @@ mk_list @@ List.map block_to_ml bls)
            l
-  | O.List (Ordered _, _, l) ->
+  | O.List (_, Ordered _, _, l) ->
       to_ls_apply "ol" @@ mk_list
       @@ List.map
-           (fun bls ->
-             to_ls_apply "li" @@ mk_list
-             @@ List.map (fun b -> block_to_ml b.O.bl_desc) bls )
+           (fun bls -> to_ls_apply "li" @@ mk_list @@ List.map block_to_ml bls)
            l
-  | O.Blockquote l ->
-      to_ls_apply "blockquote" @@ mk_list
-      @@ List.map (fun b -> block_to_ml b.O.bl_desc) l
-  | O.Thematic_break -> Parse.expression @@ Lexing.from_string @@ "F.hr ()"
-  | O.Heading (n, il) ->
+  | O.Blockquote (_, l) ->
+      to_ls_apply "blockquote" @@ mk_list @@ List.map block_to_ml l
+  | O.Thematic_break _ -> Parse.expression @@ Lexing.from_string @@ "F.hr ()"
+  | O.Heading (_, n, il) ->
       to_ls_apply (Printf.sprintf "h%d" n) @@ inline_to_ml_wrap il
   | O.Code_block _ -> failwith "UNSUPPORTED CODEBLOCK"
   | O.Html_block _ -> failwith "UNSUPPORTED HTMLBLOCK"
@@ -233,16 +226,15 @@ let to_ml p =
 
 let rec parse p = function
   | [] -> p
-  | { O.bl_desc = O.Heading (1, il); _ } :: l ->
-      parse (`Mod (inline_to_rawstr il, []) :: p) l
-  | { O.bl_desc = O.Heading (2, il); _ } :: l ->
+  | O.Heading (_, 1, il) :: l -> parse (`Mod (inline_to_rawstr il, []) :: p) l
+  | O.Heading (_, 2, il) :: l ->
       parse
         ( match p with
         | `Mod (m, d) :: p ->
             `Mod (m, `Desc (inline_to_rawstr il, []) :: d) :: p
         | _ -> assert false )
         l
-  | { O.bl_desc = bl; _ } :: l ->
+  | bl :: l ->
       parse
         ( match p with
         | `Mod (m, `Desc (s, desc) :: d) :: p ->
