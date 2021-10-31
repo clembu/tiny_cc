@@ -16,6 +16,8 @@ CSS_BUILD=${BUILD_DIR}/tiny.css
 
 OUT_FILE=docs/index.html
 
+-include local.Makefile
+
 .PHONY: all static js html gen outdir
 
 all: html
